@@ -98,7 +98,9 @@ h2{font-family:'Fraunces',serif;font-weight:600;font-size:25px;letter-spacing:-.
 .wtag-rising{background:#1e844918;color:#1e8449}
 .wtag-declining{background:#c0392b14;color:#c0392b}
 .arcband{display:flex;gap:3px;margin-top:10px}
-.arcseg{flex:1;border:1px solid;border-radius:4px;padding:6px 4px;font-size:10px;text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:1.4}
+.arcseg{flex:1;font-size:10px;text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:1.4}
+.arcseg-stack{display:flex;height:9px;border-radius:3px;overflow:hidden;margin:4px 1px;border:1px solid var(--rule)}
+.arcseg-lab{font-size:9.5px;letter-spacing:.02em}
 .arctrack{position:relative;height:30px;margin-top:5px;border-bottom:1px dashed var(--rule)}
 .arcdot{position:absolute;top:9px;width:11px;height:11px;border-radius:50%;transform:translateX(-50%);border:1.5px solid var(--card);box-shadow:0 1px 2px rgba(0,0,0,.18);cursor:default}
 </style></head><body><div class="wrap">
@@ -299,7 +301,10 @@ if(MV){
     <div class="ba"><span class="yr">corpus</span><div class="b" style="width:${(x.cm/fmax*100).toFixed(0)}%;background:#bbb"></div></div></div>`;}).join('');
   // 2 — rhetorical arc overlay
   const segs=MV.beats||[];
-  const band=segs.map(b=>{const dc=(b.top_cats&&b.top_cats[0])?b.top_cats[0][0]:''; return `<div class="arcseg" style="background:${cc(dc)}1e;border-color:${cc(dc)}66" title="corpus: ${dc}">${b.lo}%<br><span style="color:${cc(dc)}">${dc.split('-')[0]}</span></div>`;}).join('');
+  const band=segs.map(b=>{const tot=b.n||(b.top_cats||[]).reduce((s,c)=>s+c[1],0)||1; const top=(b.top_cats||[]).slice(0,3);
+   const dc=top[0]?top[0][0]:'';
+   const stack=top.map(c=>`<div style="width:${(c[1]/tot*100).toFixed(0)}%;background:${cc(c[0])}" title="${c[0]}: ${(c[1]/tot*100).toFixed(0)}%"></div>`).join('');
+   return `<div class="arcseg" title="${top.map(c=>c[0]+' '+(c[1]/tot*100).toFixed(0)+'%').join(' · ')}">${b.lo}%<div class="arcseg-stack">${stack}</div><span class="arcseg-lab" style="color:${cc(dc)}">${dc.split('-')[0]}</span></div>`;}).join('');
   const dots=e.moves.map(m=>`<div class="arcdot" style="left:${(m.pos*100).toFixed(1)}%;background:${cc(m.cat)}" title="${esc(m.label)} — ${m.cat} @${(m.pos*100).toFixed(0)}%"></div>`).join('');
   const oc=e.moves.length?e.moves[0].cat:'—', clc=e.moves.length?e.moves[e.moves.length-1].cat:'—';
   const cO=(segs[0]&&segs[0].top_cats[0])?segs[0].top_cats[0][0]:'', cC=(segs[segs.length-1]&&segs[segs.length-1].top_cats[0])?segs[segs.length-1].top_cats[0][0]:'';
@@ -312,7 +317,7 @@ if(MV){
    <div class="card" style="margin-bottom:12px"><div class="gh">Recipe fit</div><div class="gsub">This essay ${vd.join('; ')}.</div><div style="margin-top:12px">${fit}</div></div>
    <div class="card" style="margin-bottom:12px"><div class="gh">Rhetorical arc</div><div class="gsub">${arcNote}</div>
     <div class="arcband">${band}</div><div class="arctrack">${dots}</div>
-    <div class="gsub" style="margin-top:8px">Band = the move-category a typical NLH essay uses at each stage; dots = this essay's moves (hover for each). Dots over a matching band-color follow the corpus arc.</div></div>
+    <div class="gsub" style="margin-top:8px">Each band segment shows the corpus's <i>mix</i> of move-categories at that stage (width = share; moves don't cluster, so there's no single "right" move). Dots = this essay's moves (hover for each); a dot whose color has real width in the band beneath it is doing what the corpus weights there.</div></div>
    <div class="card"><div class="gh">Nearest essays by rhetoric</div><div class="gsub">The published essays most like this one in how they argue. Click to walk there.</div><div style="margin-top:10px">${nb||'<span style="color:var(--muted)">no neighbors</span>'}</div></div>`;
  };
 }
