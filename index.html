@@ -89,8 +89,8 @@ h2{font-size:15px;margin:24px 0 4px} .note{font-size:12px;color:#666;margin-bott
 
 <div class="view" id="moves">
  <div class="caveat" id="mvcav"></div>
- <h2>Winning move-categories <span style="font-weight:400;color:#888">(over-index, winners vs corpus)</span></h2>
- <div class="note">The 10 extraction categories (a fixed taxonomy, not clusters). Over-index ≫1 = winners over-invest there. The moves themselves don't form discrete types (they're a continuum) — so this category signal is the one aggregate that holds: winners win on <b>openings</b> and <b>structure</b>, not thesis-construction.</div>
+ <h2>What kind of move do winners over-invest in?</h2>
+ <div class="note">Each of the 10 extraction categories: the <b style="color:#2d6cdf">blue bar</b> is what share of the <b>winners'</b> moves fall in this category; the <b style="color:#999">grey bar</b> is the share across the <b>whole corpus</b>. Blue longer than grey = winners do it more than the field. The ratio (e.g. 1.5×) is blue÷grey. Read it as: winners pour effort into <b>openings</b> and <b>structure</b>, and comparatively neglect thesis-construction and conceptual-coinage.</div>
  <div id="mvcats"></div>
  <h2>The beat-sheet <span style="font-weight:400;color:#888">(opening → close)</span></h2>
  <div class="note">Each stage = the move-categories most common there, with the winners' actual labeled moves flagged 🏆.</div>
@@ -191,9 +191,17 @@ const MV=D.moves;
 if(MV){
  document.getElementById('mvcav').innerHTML=`${MV.n_moves} rhetorical moves across ${MV.n_essays} essays. <b>The moves do not cluster</b> (silhouette ≈0.018 at every granularity) — NLH essays make largely idiosyncratic moves, so this is a <b>continuum</b>, not a discrete catalogue. Below: the fixed-category over-index (which holds) + per-essay nearest-neighbor by rhetoric. N=3 winners — directional.`;
  const cc=cat=>{const m={opening:'#2d6cdf','thesis':'#b8860b',method:'#4a9e7f','clos':'#c0392b','source':'#16a085','structural':'#8e44ad','conceptual':'#d35400','rhetorical':'#7f8c8d','citational':'#16a085','transition':'#27ae60'};for(const k in m)if((cat||'').includes(k))return m[k];return '#777';};
- const cmax2=Math.max(...MV.categories.map(c=>c.ov));
- document.getElementById('mvcats').innerHTML=MV.categories.map(c=>
-  `<div class="catbar"><div class="ct" style="color:${cc(c.cat)}">${c.cat}</div><div class="bt"><div class="bf ${c.ov>=1?'over':'comp'}" style="width:${(c.ov/cmax2*100).toFixed(0)}%"></div><div class="bv">${c.ov}× · ${c.corp_pct}%</div></div></div>`).join('');
+ // winner share = over-index × corpus share; scale both bars to the same max
+ const cats=MV.categories.map(c=>({...c, win_pct: +(c.ov*c.corp_pct).toFixed(1)}));
+ const pmax=Math.max(...cats.flatMap(c=>[c.win_pct,c.corp_pct]),1);
+ document.getElementById('mvcats').innerHTML=cats.map(c=>{
+  const more=c.ov>=1.05, less=c.ov<0.95;
+  const tag=c.ov===0?'winners never do this':(more?`${c.ov}× — winners do it more`:(less?`${c.ov}× — winners do it less`:`${c.ov}× — about the same`));
+  return `<div class="grow">
+   <div class="gtag"><span class="lbl" style="color:${cc(c.cat)};font-weight:600">${c.cat}</span><span class="num" style="color:${more?'#2d6cdf':(less?'#c0392b':'#777')}">${tag}</span></div>
+   <div class="pb"><span class="k">winners</span><div class="b" style="width:${(c.win_pct/pmax*100).toFixed(0)}%;background:#2d6cdf"></div><span style="font-size:10px;color:#888;margin-left:4px">${c.win_pct}%</span></div>
+   <div class="pb"><span class="k">corpus</span><div class="b" style="width:${(c.corp_pct/pmax*100).toFixed(0)}%;background:#bbb"></div><span style="font-size:10px;color:#888;margin-left:4px">${c.corp_pct}%</span></div></div>`;
+ }).join('');
  document.getElementById('mvbeats').innerHTML=MV.beats.map(b=>{
   const cats=b.top_cats.map(c=>`<span style="color:${cc(c[0])}">${c[0]}</span> <span class="c">×${c[1]}</span>`).join(' · ');
   const win=b.winner_moves.length?`<div class="bswin">🏆 winners here:</div>`+b.winner_moves.map(w=>`<div class="bsmt" style="color:#b8860b;padding-left:10px">— ${esc(w.label)} <span class="c" style="color:${cc(w.cat)}">[${w.cat}]</span></div>`).join(''):'';
